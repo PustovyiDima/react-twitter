@@ -17,3 +17,10 @@
    font-size: 14px;
    color: #000;
 }
+
+.post-content--dark,
+.post-content__username--dark,
+.post-content__date--dark,
+.post-content__text--dark {
+   color: white;
+}

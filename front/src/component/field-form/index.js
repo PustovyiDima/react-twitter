@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useState, memo, useContext } from "react";
 
 import "./index.css";
 
-export default function Component({ placeholder, button, onSubmit }) {
+import { THEME_TYPE, ThemeContext } from "../../App";
+
+function Component({ placeholder, button, onSubmit }) {
    const [value, setValue] = useState("");
 
    const handleChange = (e) => setValue(e.target.value);
 
    const handleSubmit = () => {
       if (value.length === 0) return null;
+      if (value.trim() === "") return null;
 
       if (onSubmit) {
          onSubmit(value);
@@ -21,6 +24,10 @@ export default function Component({ placeholder, button, onSubmit }) {
 
    const isDisabled = value.length === 0;
 
+   const theme = useContext(ThemeContext);
+
+   console.log(theme);
+
    return (
       <div className="field-form">
          <textarea
@@ -28,7 +35,7 @@ export default function Component({ placeholder, button, onSubmit }) {
             value={value}
             rows={2}
             placeholder={placeholder}
-            className="field-form__field "
+            className={`field-form__field field-form__field--${theme.theme}`}
          ></textarea>
          <button
             onClick={handleSubmit}
@@ -37,6 +44,11 @@ export default function Component({ placeholder, button, onSubmit }) {
          >
             {button}
          </button>
+         <button onClick={theme.toggle} className="field-form__button">
+            Change Theme
+         </button>
       </div>
    );
 }
+
+export default memo(Component);

@@ -1,23 +1,42 @@
 import Title from "../../component/title";
 import Box from "../../component/box";
 import Grid from "../../component/grid";
-import PostItem from "../post-item";
+// import PostItem from "../post-item";
 
 import PostCreate from "../post-create";
-import { useState, Fragment } from "react";
+import {
+   useState,
+   Fragment,
+   useEffect,
+   useReducer,
+   lazy,
+   Suspense,
+   useCallback,
+} from "react";
 
 import { Alert, Sceleton, LOAD_STATUS } from "../../component/load";
 
 import { getDate } from "../../util/getDate";
 
-export default function Container() {
-   const [status, setStatus] = useState(null);
-   const [message, setMessage] = useState("");
-   const [data, setData] = useState(null);
+import {
+   requestInitialState,
+   requestReducer,
+   REQUEST_ACTION_TYPE,
+} from "../../util/request";
 
-   const getData = async () => {
+const PostItem = lazy(() => import("../post-item"));
+
+export default function Container() {
+   // const [status, setStatus] = useState(null);
+   // const [message, setMessage] = useState("");
+   // const [data, setData] = useState(null);
+
+   const [state, dispach] = useReducer(requestReducer, requestInitialState);
+
+   const getData = useCallback(async () => {
+      dispach({ type: REQUEST_ACTION_TYPE.PROGRESS });
       try {
-         setStatus(LOAD_STATUS.PROGRESS);
+         // setStatus(LOAD_STATUS.PROGRESS);
          const res = await fetch("http://localhost:4000/post-list", {
             method: "GET",
          });
@@ -25,19 +44,25 @@ export default function Container() {
          const data = await res.json();
 
          if (res.ok) {
-            setData(convertData(data));
-            setStatus(LOAD_STATUS.SUCCESS);
+            dispach({
+               type: REQUEST_ACTION_TYPE.SUCCESS,
+               payload: convertData(data),
+            });
          } else {
-            setMessage(data.message);
-            setStatus(LOAD_STATUS.ERROR);
+            dispach({
+               type: REQUEST_ACTION_TYPE.ERROR,
+               payload: data.message,
+            });
          }
 
          // ===
       } catch (error) {
-         setMessage(error.message);
-         setStatus(LOAD_STATUS.ERROR);
+         dispach({
+            type: REQUEST_ACTION_TYPE.ERROR,
+            payload: error.message,
+         });
       }
-   };
+   }, []);
 
    const convertData = (raw) => ({
       list: raw.list.reverse().map(({ id, username, text, date }) => ({
@@ -49,9 +74,12 @@ export default function Container() {
       isEmpty: raw.list.length === 0,
    });
 
-   if (status === null) {
+   // if (status === null) {
+   //    getData();
+   // }
+   useEffect(() => {
       getData();
-   }
+   }, []);
 
    return (
       <Grid>
@@ -66,7 +94,7 @@ export default function Container() {
             </Grid>
          </Box>
 
-         {status === LOAD_STATUS.PROGRESS && (
+         {state.status === REQUEST_ACTION_TYPE.PROGRESS && (
             <Fragment>
                <Box>
                   <Sceleton />
@@ -77,18 +105,26 @@ export default function Container() {
             </Fragment>
          )}
 
-         {status === LOAD_STATUS.ERROR && (
-            <Alert status={status} message={message} />
+         {state.status === REQUEST_ACTION_TYPE.ERROR && (
+            <Alert status={state.status} message={state.message} />
          )}
 
-         {status === LOAD_STATUS.SUCCESS && (
+         {state.status === REQUEST_ACTION_TYPE.SUCCESS && (
             <Fragment>
-               {data.isEmpty ? (
+               {state.data.isEmpty ? (
                   <Alert message="Список постів пустий" />
                ) : (
-                  data.list.map((item) => (
+                  state.data.list.map((item) => (
                      <Fragment key={item.id}>
-                        <PostItem {...item} />
+                        <Suspense
+                           fallback={
+                              <Box>
+                                 <Sceleton />
+                              </Box>
+                           }
+                        >
+                           <PostItem {...item} />
+                        </Suspense>
                      </Fragment>
                   ))
                )}

@@ -30,3 +30,8 @@
    line-height: 1.3em;
    flex-grow: 1;
 }
+
+.field-form__field--dark,
+.field-form__field--dark::placeholder {
+   color: white;
+}
